@@ -9,8 +9,6 @@ const seedDatabase = async () => {
     await mongoose.connect('mongodb://localhost:27017/my_social_network', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      useCreateIndex: true,
-      useFindAndModify: false,
     });
     console.log('Connected to MongoDB');
 
@@ -24,22 +22,23 @@ const seedDatabase = async () => {
     console.log(`Seeded ${users.length} users`);
 
     // Seed thoughts
-    data.thoughts.forEach((thoughtData) => {
+    const thoughts = data.thoughts.map((thoughtData) => {
       const user = users.find((user) => user.username === thoughtData.username);
       thoughtData.username = user._id;
+      return thoughtData;
     });
-    const thoughts = await Thought.insertMany(data.thoughts);
+    await Thought.insertMany(thoughts);
     console.log(`Seeded ${thoughts.length} thoughts`);
 
     // Seed reactions
-    data.reactions.forEach(async (reactionData) => {
-      const thought = thoughts[0]; // For simplicity, assign the reaction to the first thought
-      reactionData.username = users.find(
-        (user) => user.username === reactionData.username
-      )._id;
-      thought.reactions.push(reactionData);
-      await thought.save();
+    const thought = thoughts[0]; // For simplicity, assign the reactions to the first thought
+    const reactions = data.reactions.map((reactionData) => {
+      const user = users.find((user) => user.username === reactionData.username);
+      reactionData.username = user._id;
+      return reactionData;
     });
+    thought.reactions = reactions;
+    await thought.save();
     console.log(`Seeded reactions`);
 
     // Close the MongoDB connection
